@@ -1,4 +1,4 @@
-import { getRandomInt } from "/utils/math.js";
+import { getRandomInt, clamp} from "/utils/math.js";
 import { randomHSL } from "./utils/color.js";
 import Circle from "/class/CircleInFlatTorus.js";
 import TouchAngle from "./class/TouchAngle.js";
@@ -14,9 +14,10 @@ const touchAngle = new TouchAngle();
 const circles = [];
 // the number of circles is depedenent on the canvas size
 // the bigger the canvas, the more circles we will have
-const nbCircles = Math.max(ctx.canvas.height/100 * ctx.canvas.width/100, 80);
+const nbCircles = Math.max(ctx.canvas.height/90 * ctx.canvas.width/90, 80);
+console.log(nbCircles);
 for (let i = 0; i < nbCircles; i++) {
-  const r = getRandomInt(3, Math.min(Math.max(i/2, 3), 80));
+  const r = getRandomInt(3, clamp(i/(nbCircles/60), 3, 70));
   circles.push(new Circle({
     x: getRandomInt(0, ctx.canvas.width),
     y: getRandomInt(0, ctx.canvas.height),
