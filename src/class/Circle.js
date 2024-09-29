@@ -2,7 +2,7 @@ import { TAU } from "/utils/math.js";
 
 export default class Circle {
 
-  constructor({x, y, r, speed, dir, color}) {
+  constructor({x, y, r, speed = 0, dir = 0, color}) {
     this.x = x;
     this.y = y;
     this.r = r;
@@ -30,6 +30,16 @@ export default class Circle {
   compareTo(otherCircle) {
     // test instanceof ?
     return this.getRadius() - otherCircle.getRadius();
+  }
+
+  distanceTo(otherCircle) {
+    const dx = this.x - otherCircle.x;
+    const dy = this.y - otherCircle.y;
+    return Math.sqrt(dx*dx + dy*dy);
+  }
+
+  isInside({x, y}) {
+    return this.distanceTo({x, y}) < this.r;
   }
 
   draw(ctx) {

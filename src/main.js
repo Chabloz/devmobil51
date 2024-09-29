@@ -1,62 +1,67 @@
-import { getRandomInt, clamp} from "/utils/math.js";
+import { getRandomInt, clamp, TAU } from "/utils/math.js";
 import { randomHSL } from "./utils/color.js";
-import Circle from "/class/CircleInFlatTorus.js";
-import TouchAngle from "./class/TouchAngle.js";
-import KeyboardAngle from "./class/KeyboardAngle.js";
+import MainLoop from "/utils/mainLoop.js";
+import Circle from "/class/CircleVerlet.js";
+
+const timestep = 1000/120;
+const isMobile = window.matchMedia('(pointer: coarse)').matches;
 
 const ctx = document.querySelector('canvas').getContext('2d');
 ctx.canvas.width = ctx.canvas.clientWidth;
 ctx.canvas.height = ctx.canvas.clientHeight;
 
-const keyboardAngle  = new KeyboardAngle();
-const touchAngle = new TouchAngle();
-
 const circles = [];
-// the number of circles is depedenent on the canvas size
-// the bigger the canvas, the more circles we will have
-const nbCircles = Math.max(ctx.canvas.height/90 * ctx.canvas.width/90, 80);
-console.log(nbCircles);
+const nbCircles = Math.max(ctx.canvas.height/90 * ctx.canvas.width/90, 50);
 for (let i = 0; i < nbCircles; i++) {
-  const r = getRandomInt(3, clamp(i/(nbCircles/60), 3, 70));
+  const r = getRandomInt(3, clamp(i/(nbCircles/60), 3, 40));
   circles.push(new Circle({
-    x: getRandomInt(0, ctx.canvas.width),
-    y: getRandomInt(0, ctx.canvas.height),
-    speed: r / 100, // [pixel / ms] (pixel is not a very good choice for a unit, but this will be ok for our first animation)
+    x: getRandomInt(r, ctx.canvas.width - r),
+    y: getRandomInt(r, ctx.canvas.height - r),
     r,
-    dir: 0, // radian
+    speed: 0.3,
+    dir: Math.random() * TAU,
     color: randomHSL('65%', '50%'),
+    dt: timestep,
   }));
 }
 
-circles.sort((c1, c2) => c1.compareTo(c2));
+document.addEventListener('click', e => {
+  // fullscreen on mobile detected with media query
+  if (isMobile) {
+    document.documentElement.requestFullscreen();
+    screen.orientation.lock('portrait');
+  }
+  const mousPos = {x: e.clientX, y: e.clientY};
+  for (const c of circles) {
+    if (!c.isInside(mousPos)) continue;
+    c.applyAccelY(-0.3); break;
+  }
+});
 
-let lastTime = 0;
-
-function tick(time) {
-  requestAnimationFrame(tick);
-
-  const dt = time - lastTime;
-  lastTime = time;
-
-  // if dt is too high, we skip the world update and rendering for now
-  // Hopefully, we will catch up on the next tick call
-  if (dt >= 1000/30) return;
-
-  // User inputs management
-  let angle = keyboardAngle.getAngle();
-  if (angle === false) angle = touchAngle.getAngle();
-
-  // World update
-  if (angle !== false) {
-    circles.forEach(c => c.setDir(angle));
-    circles.forEach(c => c.move(dt, ctx.canvas.width, ctx.canvas.height));
+function updateWorld(dt) {
+  for (const c of circles) {
+    c.move(dt);
+    c.applyAccelY(0.002); // simulate gravity
+    c.boxConstraint(ctx.canvas.width, ctx.canvas.height);
   }
 
-  // Clean all
-  ctx.canvas.width = ctx.canvas.clientWidth;
-  ctx.canvas.height = ctx.canvas.clientHeight;
-
-  circles.forEach(c => c.draw(ctx));
+  for (let i = 0; i < circles.length; i++) {
+    const c1 = circles[i];
+    for (let j = i + 1; j < circles.length; j++) {
+      const c2 = circles[j];
+      c1.circleCollision(c2);
+    }
+  }
 }
 
-requestAnimationFrame(tick);
+function drawWorld() {
+  ctx.canvas.width = ctx.canvas.clientWidth;
+  ctx.canvas.height = ctx.canvas.clientHeight;
+  for (const c of circles) c.draw(ctx);
+}
+
+MainLoop.setSimulationTimestep(timestep);
+MainLoop.setUpdate(updateWorld);
+MainLoop.setDraw(drawWorld);
+MainLoop.start();
+
