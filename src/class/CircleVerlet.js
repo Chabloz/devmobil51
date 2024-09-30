@@ -60,24 +60,23 @@ export default class CircleVerlet extends Circle {
   }
 
   boxConstraint(width, height) {
+    const vX = Math.min(this.x - this.lastX, 1);
+    const vY = Math.min(this.y - this.lastY, 1);
+
     if (this.y + this.r > height) {
-      const dy = this.y - this.lastY;
       this.y = height - this.r ;
-      this.lastY = this.y + dy;
+      this.lastY = this.y + vY;
     } else if (this.y - this.r < 0) {
-      const dy = this.y - this.lastY;
       this.y = this.r;
-      this.lastY = this.y + dy;
+      this.lastY = this.y + vY;
     }
 
     if (this.x + this.r > width) {
-      const dx = this.x - this.lastX;
       this.x = width - this.r;
-      this.lastX = this.x + dx;
+      this.lastX = this.x + vX;
     } else if (this.x - this.r < 0) {
-      const dx = this.x - this.lastX;
       this.x = this.r;
-      this.lastX = this.x + dx;
+      this.lastX = this.x + vX;
     }
   }
 

@@ -42,9 +42,9 @@ document.addEventListener('click', e => {
 
 function updateWorld(dt) {
   for (const c of circles) {
+    c.boxConstraint(ctx.canvas.width, ctx.canvas.height);
     c.move(dt);
     c.applyAccelY(0.002); // simulate gravity
-    c.boxConstraint(ctx.canvas.width, ctx.canvas.height);
   }
 
   for (let i = 0; i < circles.length; i++) {
