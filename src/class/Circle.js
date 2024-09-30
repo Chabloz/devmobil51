@@ -32,9 +32,9 @@ export default class Circle {
     return this.getRadius() - otherCircle.getRadius();
   }
 
-  distanceTo(otherCircle) {
-    const dx = this.x - otherCircle.x;
-    const dy = this.y - otherCircle.y;
+  distanceTo({x , y}) {
+    const dx = this.x - x;
+    const dy = this.y - y;
     return Math.sqrt(dx*dx + dy*dy);
   }
 

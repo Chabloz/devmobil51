@@ -33,8 +33,10 @@ document.addEventListener('click', e => {
   }
   const mousPos = {x: e.clientX, y: e.clientY};
   for (const c of circles) {
-    if (!c.isInside(mousPos)) continue;
-    c.applyAccelY(-0.3); break;
+    if (c.isInside(mousPos)) {
+      c.applyAccelY(-0.3);
+      break;
+    };
   }
 });
 
@@ -63,5 +65,10 @@ function drawWorld() {
 MainLoop.setSimulationTimestep(timestep);
 MainLoop.setUpdate(updateWorld);
 MainLoop.setDraw(drawWorld);
+MainLoop.setEnd((fps, panic) => {
+  if (!panic) return;
+  console.error('panic');
+  MainLoop.resetFrameDelta();
+})
 MainLoop.start();
 
