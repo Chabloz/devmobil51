@@ -10,7 +10,8 @@ export default class CircleVerlet extends Circle {
     color,
     dir = 0,
     dt = 1000/60,
-    speed = 1,
+    speed = 0,
+    sticky = false,
   }) {
     super({x, y, r, dir, speed, color});
     this.lastX = x;
@@ -19,11 +20,11 @@ export default class CircleVerlet extends Circle {
     super.move(-dt);
     this.accelX = 0;
     this.accelY = 0;
+    this.sticky = sticky;
   }
 
   move(dt) {
-    // verlet integration fomrula : x = x + x - lastX + forceX * dt * dt
-
+    if (this.sticky) return;
     const dx = this.x - this.lastX;
     const dy = this.y - this.lastY;
 
@@ -37,11 +38,11 @@ export default class CircleVerlet extends Circle {
     this.accelY = 0;
   }
 
-  applyAccelX(forceX) {
+  applyForceX(forceX) {
     this.accelX += forceX;
   }
 
-  applyAccelY(forceY) {
+  applyForceY(forceY) {
     this.accelY += forceY;
   }
 
@@ -53,10 +54,15 @@ export default class CircleVerlet extends Circle {
     const overlap = this.r + c.r - distance;
     const dx = Math.cos(angle) * overlap / 2;
     const dy = Math.sin(angle) * overlap / 2;
-    this.x -= dx;
-    this.y -= dy;
-    c.x += dx;
-    c.y += dy;
+
+    if (!this.sticky) {
+      this.x -= dx;
+      this.y -= dy;
+    }
+    if (!c.sticky) {
+      c.x += dx;
+      c.y += dy;
+    }
   }
 
   boxConstraint(width, height) {
