@@ -1,6 +1,6 @@
 import MainLoop from "./utils/mainLoop.js";
 import Circle from "./class/Circle.js";
-import Tweens, {easings} from './class/Tweens.js'
+import Tweens, { easings } from './class/Tweens.js'
 import { getRandomInt } from "./utils/math.js";
 
 const ctx = document.querySelector('canvas').getContext('2d');
@@ -13,7 +13,7 @@ const opts = {from: 120, to: 420, dur: 2000, loop: true, yoyo: true};
 const nbParticles = easings.length;
 const particles = new Array(nbParticles);
 for (let i = 0; i < particles.length; i++) {
-  particles[i] = new Circle({x: 20 + i * 60, y: 20, r: 20});
+  particles[i] = new Circle({x: 30 + i * 45, y: 120, r:15});
 
   tweens.create({...opts, ease: easings[i], animate: progress => {
     particles[i].y = progress;
