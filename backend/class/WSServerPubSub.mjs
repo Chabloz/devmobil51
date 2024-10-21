@@ -58,10 +58,7 @@ export default class WSServerPubSub extends WSServer {
   }
 
   managePubSub(client, data) {
-    if (!data?.chan) {
-      return this.sendError(client, 'Chan is required');
-    }
-    if (typeof data.chan !== 'string') {
+    if (typeof data?.chan !== 'string') {
       return this.sendError(client, 'Invalid chan');
     }
     if (!this.channels.has(data.chan)) {
