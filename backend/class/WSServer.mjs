@@ -54,12 +54,12 @@ export default class WSServer {
 
   pingManagement() {
     for (const [client, metadata] of this.clients.entries()) {
-      if (metadata.isAlive === false) {
+      if (client.isAlive === false) {
         this.log(`Client ${metadata.id} is dead`);
         client.terminate();
         this.clients.delete(client);
       } else {
-        metadata.isAlive = false;
+        client.isAlive = false;
         client.ping();
       }
     }
@@ -78,8 +78,8 @@ export default class WSServer {
     this.clients.set(client, {
       id: crypto.randomUUID(),
       ...customMetadata,
-      isAlive: true,
     });
+    client.isAlive = true;
   }
 
   log(message) {
@@ -116,7 +116,7 @@ export default class WSServer {
   }
 
   onPong(client) {
-    this.clients.get(client).isAlive = true;
+    client.isAlive = true;
   }
 
   onClose(client) {
