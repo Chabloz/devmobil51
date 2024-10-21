@@ -8,9 +8,7 @@ export default defineConfig(({ command, mode }) => {
   const config = {
     base: '/',
     plugins: [
-      vue({
-        template: { transformAssetUrls }
-      }),
+      vue({template: { transformAssetUrls }}),
       quasar(),
     ],
     resolve: {
