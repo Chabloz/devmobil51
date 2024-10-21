@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig(({ command, mode }) => {
 
   const config = {
-    base: '/gravity/',
+    base: '/',
     resolve: {
       alias: {
         '/utils': path.resolve(__dirname, 'src/utils'),
