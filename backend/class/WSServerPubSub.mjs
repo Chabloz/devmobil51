@@ -7,13 +7,13 @@ export default class WSServerPubSub extends WSServer {
   addChannel(chan, {
     usersCanPub = true,
     usersCanSub = true,
-    validateMsg = () => true,
+    filterMsg = (msg, client, wsServer) => msg,
   } = {}) {
     if (this.channels.has(chan)) return false;
     this.channels.set(chan, {
       usersCanPub,
       usersCanSub,
-      validateMsg,
+      filterMsg,
       clients: new Set(),
     });
     return true;
@@ -53,11 +53,11 @@ export default class WSServerPubSub extends WSServer {
     if (data.action === 'rpc') {
       return this.manageRpc(client, data);
     } else {
-      return this.managePubSub(client, data, message);
+      return this.managePubSub(client, data);
     }
   }
 
-  managePubSub(client, data, message) {
+  managePubSub(client, data) {
     if (!data?.chan) {
       return this.sendError(client, 'Chan is required');
     }
@@ -87,10 +87,17 @@ export default class WSServerPubSub extends WSServer {
       if (!chan.usersCanPub) {
         return this.sendError(client, 'Users cannot pub on this chan');
       }
-      if (!chan.validateMsg(data.msg, this.clients.get(client))) {
+
+      const dataToSend = chan.filterMsg(data.msg, this.clients.get(client), this);
+      if (dataToSend === false) {
         return this.sendError(client, 'Invalid message');
       };
-      this.pub(chan, message);
+
+      this.pub(chan, JSON.stringify({
+        action: 'pub',
+        chan: data.chan,
+        msg: dataToSend,
+      }));
       return true;
     }
   }

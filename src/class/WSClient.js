@@ -1,4 +1,5 @@
 import EventMixins from '../mixin/Event.js';
+import { bytesBase64Encode } from '../utils/string.js';
 
 export default class WSClient {
 
@@ -18,8 +19,26 @@ export default class WSClient {
     this.mixinEvent();
   }
 
-  connect() {
-    this.wsClient = new WebSocket(this.url);
+  /**
+   * Connect to the WebSocket server.
+   *
+   * @param {string} [token=null] - The authentication token.
+   * @returns {Promise} - A promise that resolves when the connection is established or rejects if an error occurs.
+   * @example
+   * await wsClient.connect('secret').catch(console.error);
+   */
+  connect(token = null) {
+    // Leverage the subprotocol to pass the authentication token
+    if (token != null && typeof token != 'string') {
+      return Promise.reject(new Error('The auth token must be a string.'));
+    }
+    const subprotocols = ['im.pubsub'];
+    if (typeof token === 'string') {
+      subprotocols.push(bytesBase64Encode(token));
+    }
+
+    this.wsClient = new WebSocket(this.url, subprotocols);
+
     this.wsClient.addEventListener('message', (event) => this.onMessage(event));
 
     return new Promise((resolve, reject) => {

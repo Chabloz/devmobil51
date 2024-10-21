@@ -10,9 +10,14 @@
     "chat:server": "node backend/ChatServer.mjs"
   },
   "devDependencies": {
+    "@quasar/vite-plugin": "^1.8.0",
     "vite": "^5.4.1"
   },
   "dependencies": {
+    "@quasar/extras": "^1.16.12",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "quasar": "^2.17.1",
+    "vue": "^3.5.12",
     "ws": "^8.18.0"
   }
 }

@@ -1,7 +1,17 @@
-import WSClient from "./class/WSClient.js";
+import { createApp } from 'vue';
+import { Quasar } from 'quasar';
+import App from './AppChat.vue';
 
-const wsClient = new WSClient('ws://localhost:8887');
-await wsClient.connect().catch(console.error);
-wsClient.sub('chat', (message) => console.log(message));
-wsClient.pub('chat', 'hello world');
-wsClient.rpc('hello', {name: 'world'}).then(res => console.log(res));
+import '@quasar/extras/roboto-font/roboto-font.css';
+import '@quasar/extras/material-icons/material-icons.css';
+import 'quasar/dist/quasar.css';
+
+const myApp = createApp(App)
+myApp.use(Quasar, {
+  plugins: {},
+  config: {
+    brand: { negative: 'tomato' },
+    dark: 'auto',
+  },
+});
+myApp.mount('#app');

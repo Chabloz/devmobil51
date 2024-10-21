@@ -1,6 +1,7 @@
 import WebSocketServerOrigin from "./WebSocketServerOrigin.mjs";
 import WebSocket from 'ws';
 import crypto from 'crypto';
+import { bytesBase64Decode } from "../../src/utils/string.js";
 
 export default class WSServer {
 
@@ -13,10 +14,11 @@ export default class WSServer {
    * @param {boolean} [options.verbose=true] - Enable or disable verbose logging.
    * @param {string} [options.origins='http://localhost:5173'] - Allowed origins.
    * @param {number} [options.pingTimeout=30000] - The timeout in milliseconds for ping responses.
-   * @param {Function} [options.authCallback=headers => {}] - A callback function to authenticate new clients.
-   * The function receives the headers of the client's request. It MUST return an object to store in client metadata
-   * or false to reject the connection. For example, you can return {isAdmin: true} to store this information
-   * in the client metadata. Return {} if you don't need to store any additional information.
+   * @param {Function} [options.authCallback=(token, request, wsServer) => {}] - A callback function to authenticate new clients.
+   * The function receives the auth token (if specified in the last subprotocol), the request object and the WS server instance.
+   * The function MUST return an object to store in client metadata or false to reject the connection.
+   * For example, you can return {isAdmin: true} to store {isAdmin: true} in the client metadata.
+   * Return {} if you don't need to store any additional information.
    */
   constructor({
     port = 8887,
@@ -24,7 +26,7 @@ export default class WSServer {
     verbose = true,
     origins = 'http://localhost:5173',
     pingTimeout = 30000,
-    authCallback = (headers, socket) => {},
+    authCallback = (headers, wsServer) => {},
   } = {}) {
     this.port = port;
     this.maxNbOfClients = maxNbOfClients;
@@ -74,8 +76,8 @@ export default class WSServer {
 
   createClientMetadata(client, customMetadata) {
     this.clients.set(client, {
-      ...customMetadata,
       id: crypto.randomUUID(),
+      ...customMetadata,
       isAlive: true,
     });
   }
@@ -85,7 +87,18 @@ export default class WSServer {
   }
 
   onConnection(client, request) {
-    const customMetadata = this.authCallback(request.headers);
+    // Leverage the subprotocol to receive the authentication token
+    const subprotocols = request.headers['sec-websocket-protocol'];
+    let token = null;
+    if (typeof subprotocols == 'string') {
+      const subprotArr = subprotocols.replaceAll(', ', ',').split(',');
+      if (subprotArr.length > 1) {
+        token = subprotArr[subprotArr.length - 1];
+        token = bytesBase64Decode(token);
+      }
+    }
+
+    const customMetadata = this.authCallback(token, request, this);
     if (customMetadata === false) {
       this.sendAuthFailed(client);
       client.close();
