@@ -164,4 +164,8 @@ export default class WSServer {
     this.send(client, 'auth-success');
   }
 
+  geClientsData() {
+    return Array.from(this.clients.values());
+  }
+
 }

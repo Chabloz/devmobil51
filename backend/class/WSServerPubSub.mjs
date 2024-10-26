@@ -7,13 +7,15 @@ export default class WSServerPubSub extends WSServer {
   addChannel(chan, {
     usersCanPub = true,
     usersCanSub = true,
-    filterMsg = (msg, client, wsServer) => msg,
+    filterPub = (msg, client, wsServer) => msg,
+    filterSub = (client, wsServer) => true,
   } = {}) {
     if (this.channels.has(chan)) return false;
     this.channels.set(chan, {
       usersCanPub,
       usersCanSub,
-      filterMsg,
+      filterPub,
+      filterSub,
       clients: new Set(),
     });
     return true;
@@ -76,6 +78,9 @@ export default class WSServerPubSub extends WSServer {
       if (!chan.usersCanSub) {
         return this.sendError(client, 'Users cannot sub on this chan');
       }
+      if (!chan.filterSub(this.clients.get(client), this)) {
+        return this.sendError(client, 'Cannot sub on this chan');
+      }
       chan.clients.add(client);
       return true;
     }
@@ -85,7 +90,7 @@ export default class WSServerPubSub extends WSServer {
         return this.sendError(client, 'Users cannot pub on this chan');
       }
 
-      const dataToSend = chan.filterMsg(data.msg, this.clients.get(client), this);
+      const dataToSend = chan.filterPub(data.msg, this.clients.get(client), this);
       if (dataToSend === false) {
         return this.sendError(client, 'Invalid message');
       };
@@ -118,7 +123,7 @@ export default class WSServerPubSub extends WSServer {
 
     let response
     try {
-      response = rpc(data.data, this.clients.get(client));
+      response = rpc(data.data, this.clients.get(client), this);
     } catch (e) {
       return this.sendError(client, 'Error in rpc call');
     }

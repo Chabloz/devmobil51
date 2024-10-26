@@ -17,7 +17,7 @@
 </script>
 
 <template>
-  <q-layout>
+  <q-layout view="hHh LpR fFf">
 
     <q-header elevated>
       <TheChatToolbar  />

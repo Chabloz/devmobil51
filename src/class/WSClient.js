@@ -75,7 +75,7 @@ export default class WSClient {
     }
 
     if (data.action === 'error') {
-      throw new Error('WS error: ' + data.msg);
+      this.emit(`ws:error`, data.msg);
       return;
     }
 
