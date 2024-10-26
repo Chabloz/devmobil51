@@ -1,4 +1,5 @@
 import EventMixins from '../mixin/Event.js';
+import { bytesBase64Encode } from '../utils/string.js';
 
 export default class WSClient {
 
@@ -18,8 +19,26 @@ export default class WSClient {
     this.mixinEvent();
   }
 
-  connect() {
-    this.wsClient = new WebSocket(this.url);
+  /**
+   * Connect to the WebSocket server.
+   *
+   * @param {string} [token=null] - The authentication token.
+   * @returns {Promise} - A promise that resolves when the connection is established or rejects if an error occurs.
+   * @example
+   * await wsClient.connect('secret').catch(console.error);
+   */
+  connect(token = null) {
+    // Leverage the subprotocol to pass the authentication token
+    if (token != null && typeof token != 'string') {
+      return Promise.reject(new Error('The auth token must be a string.'));
+    }
+    const subprotocols = ['im.pubsub'];
+    if (typeof token === 'string') {
+      subprotocols.push(bytesBase64Encode(token));
+    }
+
+    this.wsClient = new WebSocket(this.url, subprotocols);
+
     this.wsClient.addEventListener('message', (event) => this.onMessage(event));
 
     return new Promise((resolve, reject) => {
@@ -50,13 +69,14 @@ export default class WSClient {
     if (data.action === 'rpc') {
       this.emit(`ws:rpc:${data.name}`, {
         response: data.response,
+        type: data.type,
         id: data.id,
       });
       return;
     }
 
     if (data.action === 'error') {
-      throw new Error('WS error: ' + data.msg);
+      this.emit(`ws:error`, data.msg);
       return;
     }
 
@@ -78,14 +98,18 @@ export default class WSClient {
 
       const timer = setTimeout(() => {
         this.off(`ws:rpc:${name}`, callback);
-        reject(new Error('WS RPC Timeout for ' + name));
+        reject(new Error('WS RPC Timeout for ' + name + ' (rpc id: ' + id + ')'));
       }, timeout);
 
       const callback = (resp) => {
         if (resp.id !== id) return;
         clearTimeout(timer);
         this.off(`ws:rpc:${name}`, callback);
-        resp.response ? resolve(resp.response) : reject(new Error('WS RPC error for ' + name));
+        if (resp.type === 'success') {
+          resolve(resp.response)
+        } else {
+          reject(new Error(resp.response));
+        }
       };
 
       this.on(`ws:rpc:${name}`, callback);

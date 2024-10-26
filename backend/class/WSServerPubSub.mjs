@@ -1,4 +1,5 @@
 import WSServer from "./WSServer.mjs";
+import WSServerError from "./WSServerError.mjs";
 
 export default class WSServerPubSub extends WSServer {
   channels = new Map();
@@ -7,13 +8,15 @@ export default class WSServerPubSub extends WSServer {
   addChannel(chan, {
     usersCanPub = true,
     usersCanSub = true,
-    validateMsg = () => true,
+    filterPub = (msg, client, wsServer) => msg,
+    filterSub = (client, wsServer) => true,
   } = {}) {
     if (this.channels.has(chan)) return false;
     this.channels.set(chan, {
       usersCanPub,
       usersCanSub,
-      validateMsg,
+      filterPub,
+      filterSub,
       clients: new Set(),
     });
     return true;
@@ -53,15 +56,12 @@ export default class WSServerPubSub extends WSServer {
     if (data.action === 'rpc') {
       return this.manageRpc(client, data);
     } else {
-      return this.managePubSub(client, data, message);
+      return this.managePubSub(client, data);
     }
   }
 
-  managePubSub(client, data, message) {
-    if (!data?.chan) {
-      return this.sendError(client, 'Chan is required');
-    }
-    if (typeof data.chan !== 'string') {
+  managePubSub(client, data) {
+    if (typeof data?.chan !== 'string') {
       return this.sendError(client, 'Invalid chan');
     }
     if (!this.channels.has(data.chan)) {
@@ -79,6 +79,9 @@ export default class WSServerPubSub extends WSServer {
       if (!chan.usersCanSub) {
         return this.sendError(client, 'Users cannot sub on this chan');
       }
+      if (!chan.filterSub(this.clients.get(client), this)) {
+        return this.sendError(client, 'Cannot sub on this chan');
+      }
       chan.clients.add(client);
       return true;
     }
@@ -87,10 +90,17 @@ export default class WSServerPubSub extends WSServer {
       if (!chan.usersCanPub) {
         return this.sendError(client, 'Users cannot pub on this chan');
       }
-      if (!chan.validateMsg(data.msg, this.clients.get(client))) {
+
+      const dataToSend = chan.filterPub(data.msg, this.clients.get(client), this);
+      if (dataToSend === false) {
         return this.sendError(client, 'Invalid message');
       };
-      this.pub(chan, message);
+
+      this.pub(chan, JSON.stringify({
+        action: 'pub',
+        chan: data.chan,
+        msg: dataToSend,
+      }));
       return true;
     }
   }
@@ -109,22 +119,19 @@ export default class WSServerPubSub extends WSServer {
     const rpc = this.rpcs.get(data.name);
 
     if (!rpc) {
-      return this.sendError(client, 'Unknown rpc');
+      return this.sendRpcError(client, data.id, data.name, 'Unknown rpc');
     }
 
-    let response
+    let response;
     try {
-      response = rpc(data.data, this.clients.get(client));
+      response = rpc(data.data, this.clients.get(client), this);
     } catch (e) {
-      return this.sendError(client, 'Error in rpc call');
+      if (!(e instanceof WSServerError)) this.log(e.name +': ' + e.message);
+      const response = e instanceof WSServerError ? e.message : 'Server error';
+      return this.sendRpcError(client, data.id, data.name, response);
     }
 
-    this.send(client, JSON.stringify({
-      action: 'rpc',
-      name: data.name,
-      response,
-      id: data.id,
-    }));
+    return this.sendRpcSuccess(client, data.id, data.name, response);
   }
 
   pub(chan, message) {
@@ -143,6 +150,20 @@ export default class WSServerPubSub extends WSServer {
   sendError(client, msg) {
     this.send(client, JSON.stringify({action: 'error', msg}));
     return false;
+  }
+
+  sendRpcError(client, id, name, response) {
+    this.sendRpc(client, id, name, response, 'error');
+    return false;
+  }
+
+  sendRpcSuccess(client, id, name, response) {
+    this.sendRpc(client, id, name, response);
+    return true;
+  }
+
+  sendRpc(client, id, name, response, type = 'success') {
+    this.send(client, JSON.stringify({action: 'rpc', id, name, type, response}));
   }
 
   sendAuthFailed(client) {
