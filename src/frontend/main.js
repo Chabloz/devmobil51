@@ -5,8 +5,26 @@ wsClient.on('ws:error', console.error);
 
 await wsClient.connect().catch(console.error);
 
-wsClient.sub('chat', (message) => console.log(message));
+wsClient.sub('chat', (message) => console.log(message))
+  .then(console.log)
+  .catch(console.error);
 
-wsClient.pub('chat', 'Hello World');
+wsClient.pub('chat', 'Hello World')
+  .then(console.log)
+  .catch(console.error);
 
-wsClient.rpc('hello', {name: 'Anonymous'}).then(res => console.log(res));
+wsClient.pub('chat', 'badword')
+  .then(console.log)
+  .catch(console.error);
+
+wsClient.pub('cht', 'Hello')
+  .then(console.log)
+  .catch(console.error);
+
+wsClient.rpc('hello', {name: 'Anonymous'})
+  .then(console.log)
+  .catch(console.error);
+
+wsClient.unsub('chat')
+  .then(console.log)
+  .catch(console.error);

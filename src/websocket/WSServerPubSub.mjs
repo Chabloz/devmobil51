@@ -8,15 +8,17 @@ export default class WSServerPubSub extends WSServer {
   addChannel(chan, {
     usersCanPub = true,
     usersCanSub = true,
-    filterPub = (msg, client, wsServer) => msg,
-    filterSub = (client, wsServer) => true,
+    hookPub = (msg, client, wsServer) => msg,
+    hookSub = (client, wsServer) => true,
+    hookUnsub = (client, wsServer) => null,
   } = {}) {
     if (this.channels.has(chan)) return false;
     this.channels.set(chan, {
       usersCanPub,
       usersCanSub,
-      filterPub,
-      filterSub,
+      hookPub,
+      hookSub,
+      hookUnsub,
       clients: new Set(),
     });
     return true;
@@ -64,45 +66,67 @@ export default class WSServerPubSub extends WSServer {
     if (typeof data?.chan !== 'string') {
       return this.sendError(client, 'Invalid chan');
     }
-    if (!this.channels.has(data.chan)) {
-      return this.sendError(client, 'Unknown chan');
-    };
 
-    const chan = this.channels.get(data.chan);
+    if (typeof data?.id !== 'number') {
+      return this.sendError(client, 'Invalid id or id is missing');
+    }
 
     if (data.action === 'unsub') {
+      if (!this.channels.has(data.chan)) {
+        return this.sendUnsubError(client, data.id, data.chan, 'Unknown chan');
+      };
+      const chan = this.channels.get(data.chan);
+
+      if (!chan.clients.has(client)) {
+        return this.sendUnsubError(client, data.id, data.chan, 'Not subscribed');
+      }
+
+      chan.hookUnsub(this.clients.get(client), this);
       chan.clients.delete(client);
-      return true;
+      return this.sendUnsubSuccess(client, data.id, data.chan, 'Unsubscribed');
     }
 
     if (data.action === 'sub') {
+      if (!this.channels.has(data.chan)) {
+        return this.sendSubError(client, data.id, data.chan, 'Unknown chan');
+      }
+
+      const chan = this.channels.get(data.chan);
+
       if (!chan.usersCanSub) {
-        return this.sendError(client, 'Users cannot sub on this chan');
+        return this.sendSubError(client, data.id, data.chan, 'Users cannot sub on this chan');
       }
-      if (!chan.filterSub(this.clients.get(client), this)) {
-        return this.sendError(client, 'Cannot sub on this chan');
+
+      if (!chan.hookSub(this.clients.get(client), this)) {
+        return this.sendSubError(client, data.id, data.chan, 'Subscription denied');
       }
+
       chan.clients.add(client);
-      return true;
+      return this.sendSubSuccess(client, data.id, data.chan, 'Subscribed');
     }
 
     if (data.action === 'pub') {
-      if (!chan.usersCanPub) {
-        return this.sendError(client, 'Users cannot pub on this chan');
-      }
-
-      const dataToSend = chan.filterPub(data.msg, this.clients.get(client), this);
-      if (dataToSend === false) {
-        // TODO: maybe send error to client like in rpc (with Promise on client side)
-        return this.sendError(client, 'Invalid message');
+      if (!this.channels.has(data.chan)) {
+        return this.sendPubError(client, data.id, data.chan, 'Unknown chan');
       };
 
-      this.pub(chan, JSON.stringify({
-        action: 'pub',
-        chan: data.chan,
-        msg: dataToSend,
-      }));
-      return true;
+      const chan = this.channels.get(data.chan);
+
+      if (!chan.usersCanPub) {
+        return this.sendPubError(client, data.id, data.chan, 'Users cannot pub on this chan');
+      }
+
+      let dataToSend;
+      try {
+        dataToSend = chan.hookPub(data.msg, this.clients.get(client), this);
+      } catch (e) {
+        if (!(e instanceof WSServerError)) this.log(e.name +': ' + e.message);
+        const response = e instanceof WSServerError ? e.message : 'Server error';
+        return this.sendPubError(client, data.id, data.chan, response);
+      }
+
+      this.sendPubSuccess(client, data.id, data.chan, 'Message sent');
+      return this.pub(data.chan, dataToSend);
     }
   }
 
@@ -135,15 +159,29 @@ export default class WSServerPubSub extends WSServer {
     return this.sendRpcSuccess(client, data.id, data.name, response);
   }
 
-  pub(chan, message) {
+  pub(chanName, msg) {
+    const chan = this.channels.get(chanName);
+    if (!chan) return false;
+
+    const message = JSON.stringify({
+      action: 'pub',
+      chan: chanName,
+      msg,
+    });
+
     for (const client of chan.clients) {
       this.send(client, message);
     }
+
+    return true;
   }
 
   onClose(client) {
     for (const chan of this.channels.values()) {
-      chan.clients.delete(client);
+      if (chan.clients.has(client)) {
+        chan.hookUnsub(this.clients.get(client), this);
+        chan.clients.delete(client);
+      }
     }
     super.onClose(client);
   }
@@ -164,7 +202,73 @@ export default class WSServerPubSub extends WSServer {
   }
 
   sendRpc(client, id, name, response, type = 'success') {
-    this.send(client, JSON.stringify({action: 'rpc', id, name, type, response}));
+    this.send(client, JSON.stringify({
+      action: 'rpc',
+      id,
+      name,
+      type,
+      response,
+    }));
+  }
+
+  sendSubError(client, id, chan, response) {
+    this.sendSubConfirm(client, id, chan, response, 'error');
+    return false;
+  }
+
+  sendSubSuccess(client, id, chan, response) {
+    this.sendSubConfirm(client, id, chan, response);
+    return true;
+  }
+
+  sendSubConfirm(client, id, chan, response, type = 'success') {
+    this.send(client, JSON.stringify({
+      action: 'sub',
+      id,
+      chan,
+      type,
+      response,
+    }));
+  }
+
+  sendUnsubError(client, id, chan, response) {
+    this.sendUnsubConfirm(client, id, chan, response, 'error');
+    return false;
+  }
+
+  sendUnsubSuccess(client, id, chan, response) {
+    this.sendUnsubConfirm(client, id, chan, response);
+    return true;
+  }
+
+  sendUnsubConfirm(client, id, chan, response, type = 'success') {
+    this.send(client, JSON.stringify({
+      action: 'unsub',
+      id,
+      chan,
+      type,
+      response,
+    }));
+  }
+
+  sendPubError(client, id, chan, response) {
+    this.sendPubConfirm(client, id, chan, response, 'error');
+    return false;
+  }
+
+  sendPubSuccess(client, id, chan, response) {
+    this.sendPubConfirm(client, id, chan, response);
+    return true;
+  }
+
+  sendPubConfirm(client, id, chan, response, type = 'success') {
+    this.send(client, JSON.stringify({
+      action: 'pub-confirm',
+      id,
+      chan,
+      type,
+      response,
+    }));
   }
 
   sendAuthFailed(client) {

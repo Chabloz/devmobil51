@@ -10,7 +10,7 @@ export default class WSClient {
  * @example
  * const wsClient = new WSClient('ws://localhost:8001');
  */
-  constructor(url = null) {
+  constructor(url = null, defaultTimeout = 5000) {
     if (url === null) {
       const hostname = window.location.hostname;
       const mustBeSecure = window.location.protocol == 'https:';
@@ -20,7 +20,11 @@ export default class WSClient {
       this.url = url
     }
     this.wsClient = null;
+    this.defaultTimeout = defaultTimeout;
     this.rpcId = 0;
+    this.pubId = 0;
+    this.subId = 0;
+    this.unsubId = 0;
 
     Object.assign(this, EventMixins);
     this.mixinEvent();
@@ -68,6 +72,33 @@ export default class WSClient {
   onMessage(event) {
     const data = JSON.parse(event.data);
 
+    if (data.action === 'sub') {
+      this.emit(`ws:sub:${data.chan}`, {
+        response: data.response,
+        type: data.type,
+        id: data.id,
+      });
+      return;
+    }
+
+    if (data.action === 'unsub') {
+      this.emit(`ws:unsub:${data.chan}`, {
+        response: data.response,
+        type: data.type,
+        id: data.id,
+      });
+      return;
+    }
+
+    if (data.action === 'pub-confirm') {
+      this.emit(`ws:pub:${data.chan}`, {
+        response: data.response,
+        type: data.type,
+        id: data.id,
+      });
+      return;
+    }
+
     if (data.action === 'pub') {
       this.emit(`ws:chan:${data.chan}`, data.msg);
       return;
@@ -109,7 +140,7 @@ export default class WSClient {
    * @example
    * await wsClient.rpc('get-user', {id: 1}).catch(console.error);
    */
-  rpc(name, data = {}, timeout = 5000) {
+  rpc(name, data = {}, timeout = this.defaultTimeout) {
     return new Promise((resolve, reject) => {
       const id = this.rpcId++;
 
@@ -138,16 +169,34 @@ export default class WSClient {
    * Publish a message to a channel.
    *
    * @param {string} chan - The channel name.
-   * @param {object} msg - The message to publish.
+   * @param {object} msg - The message to publish
+   * @returns {Promise} - A promise that resolves with the response or rejects if an error occurs.
    * @example
    * wsClient.pub('chat', {message: 'Hello, World!'});
    */
-  pub(chan, msg) {
-    this.wsClient.send(JSON.stringify({
-      action: 'pub',
-      chan,
-      msg,
-    }));
+  pub(chan, msg, timeout = this.defaultTimeout) {
+    return new Promise((resolve, reject) => {
+      const id = this.pubId++;
+
+      const timer = setTimeout(() => {
+        this.off(`ws:pub:${chan}`, callback);
+        reject(new Error('WS Pub Timeout for ' + chan + ' (pub id: ' + id + ')'));
+      }, timeout);
+
+      const callback = (resp) => {
+        if (resp.id !== id) return;
+        clearTimeout(timer);
+        this.off(`ws:pub:${chan}`, callback);
+        if (resp.type === 'success') {
+          resolve(resp.response)
+        } else {
+          reject(new Error(resp.response));
+        }
+      };
+
+      this.on(`ws:pub:${chan}`, callback);
+      this.wsClient.send(JSON.stringify({action: 'pub', chan, id, msg}));
+    });
   }
 
   /**
@@ -159,15 +208,34 @@ export default class WSClient {
    * @example
    * const unsub = wsClient.sub('chat', (msg) => console.log(msg));
    */
-  sub(chan, callback) {
-    if (!this.hasListener(chan)) {
-      this.wsClient.send(JSON.stringify({
-        action: 'sub',
-        chan,
-      }));
-    }
+  sub(chan, callback, timeout = this.defaultTimeout) {
     this.on(`ws:chan:${chan}`, callback);
-    return () => this.unsub(chan, callback);
+    if (!this.hasListener(chan)) {
+      return new Promise((resolve, reject) => {
+        const id = this.subId++;
+
+        const timer = setTimeout(() => {
+          this.off(`ws:sub:${chan}`, subCallback);
+          reject(new Error('WS Sub Timeout for ' + chan + ' (sub id: ' + id + ')'));
+        }, timeout);
+
+        const subCallback = (resp) => {
+          if (resp.id !== id) return;
+          clearTimeout(timer);
+          this.off(`ws:sub:${chan}`, subCallback);
+          if (resp.type === 'success') {
+            resolve(resp.response)
+          } else {
+            this.off(`ws:chan:${chan}`, callback);
+            reject(new Error(resp.response));
+          }
+        };
+
+        this.on(`ws:sub:${chan}`, subCallback);
+        this.wsClient.send(JSON.stringify({action: 'sub', chan, id}));
+      });
+    }
+    return Promise.resolve('Subscribed');
   }
 
   /**
@@ -178,18 +246,40 @@ export default class WSClient {
    * @example
    * wsClient.unsub('chat');
    */
-  unsub(chan, callback = null) {
+  unsub(chan, callback = null, timeout = this.defaultTimeout) {
     if (callback !== null) {
+      console.log('unsub with a callback');
       this.off(`ws:chan:${chan}`, callback);
     } else {
       this.clear(`ws:chan:${chan}`);
     }
+
     if (!this.hasListener(`ws:chan:${chan}`)) {
-      this.wsClient.send(JSON.stringify({
-        action: 'unsub',
-        chan,
-      }));
+      return new Promise((resolve, reject) => {
+        const id = this.unsubId++;
+
+        const timer = setTimeout(() => {
+          this.off(`ws:unsub:${chan}`, unsubCallback);
+          reject(new Error('WS Unsub Timeout for ' + chan + ' (unsub id: ' + id + ')'));
+        }, timeout);
+
+        const unsubCallback = (resp) => {
+          if (resp.id !== id) return;
+          clearTimeout(timer);
+          this.off(`ws:unsub:${chan}`, unsubCallback);
+          if (resp.type === 'success') {
+            resolve(resp.response)
+          } else {
+            reject(new Error(resp.response));
+          }
+        };
+
+        this.on(`ws:unsub:${chan}`, unsubCallback);
+        this.wsClient.send(JSON.stringify({action: 'unsub', chan, id}));
+      });
     }
+
+    return Promise.resolve('Unsubscribed');
   }
 
 }

@@ -6,11 +6,16 @@ const server = new WSServerPubSub({
   origins: 'http://localhost:5173',
 });
 
-server.addChannel('chat');
+server.addChannel('chat', {
+  hookPub: (msg, client, wsServer) => {
+    if (msg === 'badword') throw new WSServerError('Bad word');
+    return {msg, time: Date.now(), user: client.id};
+  },
+});
 
 server.addRpc('hello', (data, client, wsServer) => {
   if (!data?.name) throw new WSServerError('Name is required');
-  return `Hello ${data.name} user ${client.id}`;
+  return `Hello from WS server ${data.name}`;
 });
 
 server.start();
