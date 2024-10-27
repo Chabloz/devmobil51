@@ -1,5 +1,5 @@
-import WSServerPubSub from '../lib/websocket/WSServerPubSub.mjs';
-import WSServerError from '../lib/websocket/WSServerError.mjs';
+import WSServerPubSub from '../websocket/WSServerPubSub.mjs';
+import WSServerError from '../websocket/WSServerError.mjs';
 
 const server = new WSServerPubSub({
   port: 8887,

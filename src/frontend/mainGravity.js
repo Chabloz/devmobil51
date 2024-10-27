@@ -1,8 +1,8 @@
 import { getRandomInt, clamp} from "/utils/math.js";
-import { randomHSL } from "./utils/color.js";
-import MainLoop from "./utils/mainLoop.js";
-import Circle from "./class/CircleVerlet.js";
-import Rope from "./class/RopeVerlet.js";
+import { randomHSL } from "/utils/color.js";
+import MainLoop from "/utils/mainLoop.js";
+import Circle from "/class/CircleVerlet.js";
+import Rope from "/class/RopeVerlet.js";
 
 const timestep = 1000/120;
 const isMobile = window.matchMedia('(pointer: coarse)').matches;

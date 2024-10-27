@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "chat:server": "node backend/ChatServer.mjs"
+    "chat:server": "node src/backend/ChatServer.mjs"
   },
   "devDependencies": {
     "vite": "^5.4.1"

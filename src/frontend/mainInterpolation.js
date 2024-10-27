@@ -1,7 +1,7 @@
-import MainLoop from "./utils/mainLoop.js";
-import Circle from "./class/Circle.js";
-import Tweens, { easings } from './class/Tweens.js'
-import { getRandomInt } from "./utils/math.js";
+import MainLoop from "../utils/mainLoop.js";
+import Circle from "../class/Circle.js";
+import Tweens, { easings } from '../class/Tweens.js'
+import { getRandomInt } from "../utils/math.js";
 
 const ctx = document.querySelector('canvas').getContext('2d');
 ctx.canvas.width = ctx.canvas.clientWidth;
