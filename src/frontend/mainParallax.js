@@ -1,8 +1,8 @@
 import { getRandomInt, clamp} from "/utils/math.js";
-import { randomHSL } from "../utils/color.js";
+import { randomHSL } from "/utils/color.js";
 import Circle from "/class/CircleInFlatTorus.js";
-import TouchAngle from "../class/TouchAngle.js";
-import KeyboardAngle from "../class/KeyboardAngle.js";
+import TouchAngle from "/class/TouchAngle.js";
+import KeyboardAngle from "/class/KeyboardAngle.js";
 
 const ctx = document.querySelector('canvas').getContext('2d');
 ctx.canvas.width = ctx.canvas.clientWidth;
