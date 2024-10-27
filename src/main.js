@@ -1,4 +1,4 @@
-import WSClient from "./class/WSClient.js";
+import WSClient from "../lib/websocket/WSClient.js";
 
 const wsClient = new WSClient('ws://localhost:8887');
 wsClient.on('ws:error', console.error);
@@ -9,4 +9,4 @@ wsClient.sub('chat', (message) => console.log(message));
 
 wsClient.pub('chat', 'Hello World');
 
-wsClient.rpc('hello', {nme: 'Anonymous'}).then(res => console.log(res));
+wsClient.rpc('hello', {name: 'Anonymous'}).then(res => console.log(res));
