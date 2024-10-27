@@ -24,7 +24,3 @@ wsClient.pub('cht', 'Hello')
 wsClient.rpc('hello', {name: 'Anonymous'})
   .then(console.log)
   .catch(console.error);
-
-wsClient.unsub('chat')
-  .then(console.log)
-  .catch(console.error);
