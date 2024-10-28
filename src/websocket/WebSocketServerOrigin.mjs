@@ -41,7 +41,7 @@ export default class WebSocketServerOrigin extends WebSocketServer {
       this.log('Server is full');
       socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
       socket.destroy();
-      return
+      return;
     }
 
     return super.handleUpgrade(request, socket, head, callback);
