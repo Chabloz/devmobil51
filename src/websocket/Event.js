@@ -23,6 +23,7 @@ export default {
 
   addListener(event, callback) {
     let callbackSet = this.listeners.get(event);
+    // If it is the first callback for this event, we create a set storage
     if (!callbackSet) {
       callbackSet = new Set();
       this.listeners.set(event, callbackSet);

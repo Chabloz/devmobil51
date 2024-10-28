@@ -1,5 +1,5 @@
 <script setup>
-  import { shortFrCH as formatDate } from '../utils/date.js';
+  import { shortFrCH as formatDate } from '/utils/date.js';
   const props = defineProps({
     msg: Object
   });

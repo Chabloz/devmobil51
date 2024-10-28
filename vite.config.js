@@ -17,6 +17,12 @@ export default defineConfig(({ command, mode }) => {
         '/class': path.resolve(__dirname, 'src/class'),
       },
     },
+    root: path.resolve(__dirname, 'src/frontend'),
+    build: {
+      rollupOptions: {
+        input: path.resolve(__dirname, 'src/frontend') + '/index.html',
+      }
+    }
   };
 
   return config;

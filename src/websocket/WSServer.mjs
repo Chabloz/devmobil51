@@ -1,7 +1,7 @@
 import WebSocketServerOrigin from "./WebSocketServerOrigin.mjs";
 import WebSocket from 'ws';
 import crypto from 'crypto';
-import { bytesBase64Decode } from "../../src/utils/string.js";
+import { bytesBase64Decode } from "./string.js";
 
 export default class WSServer {
 

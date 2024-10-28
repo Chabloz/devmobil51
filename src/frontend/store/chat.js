@@ -1,4 +1,4 @@
-import WSClient from "../class/WSClient.js";
+import WSClient from "../../websocket/WSClient.js";
 
 const wsClient = new WSClient('ws://localhost:8887');
 wsClient.on('ws:error', console.error);

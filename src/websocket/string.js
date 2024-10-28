@@ -1,4 +1,3 @@
-
 export function bytesBase64Encode(str) {
   const bytes = new TextEncoder().encode(str)
   const binString = Array.from(bytes, (byte) =>

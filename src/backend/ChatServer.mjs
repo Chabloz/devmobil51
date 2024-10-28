@@ -1,5 +1,5 @@
-import WSServerPubSub from './class/WSServerPubSub.mjs';
-import { getRandomInt } from '../src/utils/math.js';
+import WSServerPubSub from '../websocket/WSServerPubSub.mjs';
+import { getRandomInt } from '../utils/math.js';
 
 function authCallback(token, request, wsServer) {
   const id = getRandomInt(1, 9999);
@@ -10,7 +10,7 @@ function authCallback(token, request, wsServer) {
   return {id, username: 'Anonymous-' + id};
 }
 
-function filterPub(msg, client, wsServer) {
+function hookPub(msg, client, wsServer) {
   if (typeof msg !== 'string' || msg.length < 1) return false;
   const timestamp = new Date().getTime();
   return {msg, timestamp, username: client.username};
@@ -22,5 +22,5 @@ const wsServer = new WSServerPubSub({
   authCallback,
 });
 
-wsServer.addChannel('chat', { filterPub });
+wsServer.addChannel('chat', { hookPub });
 wsServer.start();
