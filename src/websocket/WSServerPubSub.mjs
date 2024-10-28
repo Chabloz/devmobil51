@@ -71,9 +71,14 @@ export default class WSServerPubSub extends WSServer {
     return true;
   }
 
-  removeChannel(chan) {
-    if (!this.channels.has(chan)) return false;
-    this.channels.delete(chan);
+  removeChannel(chanName) {
+    if (!this.channels.has(chanName)) return false;
+    const chan = this.channels.get(chanName);
+    // Call the unsub hook for all clients
+    for (const client of chan.clients) {
+      chan.hookUnsub(this.clients.get(client), this);
+    }
+    this.channels.delete(chanName);
     return true;
   }
 
