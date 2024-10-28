@@ -5,6 +5,33 @@ export default class WSServerPubSub extends WSServer {
   channels = new Map();
   rpcs = new Map();
 
+  /**
+   * Add a channel to the server
+   *
+   * @param {string} chan - The channel name
+   * @param {object} options - The channel options
+   * @param {boolean} [options.usersCanPub=true] - If users can publish on this channel
+   * @param {boolean} [options.usersCanSub=true] - If users can subscribe to this channel
+   * @param {function} [options.hookPub=(msg, client, wsServer) => msg] - The hook to call before publishing a message
+   * It must return the message to send to the all clients of the channel.
+   * The callback is called with the message to publish, the client metadata and the server instance.
+   * It can throw a WSServerError to send an error to the client
+   * @param {function} [options.hookSub=(client, wsServer) => true] - The hook to call before subscribing a client to the channel
+   * It must return true if the client can subscribe to the channel, false otherwise.
+   * The callback is called with the client metadata and the server instance
+   * @param {function} [options.hookUnsub=(client, wsServer) => null] - The hook to call before unsubscribing a client to the channel
+   * The return value does not matter.
+   * The callback is called with the client metadata and the server instance
+   *
+   * @example
+   * wsServer.addChannel('chat', {
+   *   usersCanPub: true,
+   *   usersCanSub: true,
+   *   hookPub: (msg, client, wsServer) => {
+   *     return {...msg, from: client.username, time: Date.now()}
+   *   },
+   * });
+   */
   addChannel(chan, {
     usersCanPub = true,
     usersCanSub = true,
@@ -24,6 +51,20 @@ export default class WSServerPubSub extends WSServer {
     return true;
   }
 
+  /**
+   * Add a RPC to the server
+   *
+   * @param {string} name - The RPC name
+   * @param {function} callback - The RPC callback. It must return the response to the client.
+   * The callback is called with the data sent by the client, the client metadata and the server instance.
+   * The callback can throw a WSServerError to send an error to the client
+   *
+   * @example
+   * wsServer.addRpc('hello', (data, client, wsServer) => {
+   *   if (!data?.name) throw new WSServerError('Name is required');
+   *   return `Hello from WS server ${data.name}`;
+   * });
+   */
   addRpc(name, callback) {
     if (this.rpcs.has(name)) return false;
     this.rpcs.set(name, callback);
