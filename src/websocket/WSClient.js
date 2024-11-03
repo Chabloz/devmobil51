@@ -249,7 +249,6 @@ export default class WSClient {
    */
   unsub(chan, callback = null, timeout = this.defaultTimeout) {
     if (callback !== null) {
-      console.log('unsub with a callback');
       this.off(`ws:chan:${chan}`, callback);
     } else {
       this.clear(`ws:chan:${chan}`);
