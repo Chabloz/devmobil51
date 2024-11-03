@@ -26,6 +26,7 @@ export function setDefaultBaseUrl(url) {
  * if not specified, it will be the default headers (see above to specify them)
  * @returns {Object} The fetch API utilities
  * @property {Function} fetchApi - Function to fetch data
+ * @property {Function} fetchApiToRef - Function to fetch data and return it in refs
  */
 export function useFetchApi(baseUrl = null, additionalHeaders = {}) {
   if (baseUrl === null) baseUrl = defaultBaseUrl;
