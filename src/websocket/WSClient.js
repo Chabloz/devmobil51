@@ -67,6 +67,7 @@ export default class WSClient {
     if (this.wsClient === null) return;
     this.wsClient.close();
     this.wsClient = null;
+    this.emit('close');
   }
 
   onMessage(event) {
