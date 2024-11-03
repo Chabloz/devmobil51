@@ -12,10 +12,10 @@
     nextTick(() => window.scrollTo(0, document.body.scrollHeight));
   }
 
-  watch(isConnecting, (isConnected) => {
-    if (!isConnected) return;
+  watch(isConnecting, (isConnecting) => {
+    if (isConnecting) return;
     wsClient.sub('chat', pushToChat);
-  });
+  }, { immediate: true });
 
   onUnmounted(() => wsClient.unsub('chat', pushToChat));
 </script>
