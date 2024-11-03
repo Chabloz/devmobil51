@@ -1,5 +1,4 @@
 <script setup>
-  import { onUnmounted, watch, ref, nextTick } from 'vue';
   import TheChatToolbar from './components/TheChatToolbar.vue';
   import TheChatForm from './components/TheChatForm.vue';
   import TheChatMessages from './components/TheChatMessages.vue';
@@ -21,7 +20,7 @@
 
       <q-spinner-facebook v-if="isConnecting"  class="q-ma-md" />
 
-      <the-chat-messages  v-if="!isConnecting && !hasConnectionFailed" />
+      <the-chat-messages v-if="!isConnecting && !hasConnectionFailed" />
     </q-page-container>
 
     <q-footer class="no-padding no-margin" v-if="!isConnecting && !hasConnectionFailed">
