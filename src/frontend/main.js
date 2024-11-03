@@ -1,26 +1,17 @@
-import WSClient from "../websocket/WSClient.js";
+import { createApp } from 'vue';
+import { Quasar } from 'quasar';
+import App from './AppChat.vue';
 
-const wsClient = new WSClient('ws://localhost:8887');
-wsClient.on('ws:error', console.error);
+import '@quasar/extras/roboto-font/roboto-font.css';
+import '@quasar/extras/material-icons/material-icons.css';
+import 'quasar/dist/quasar.css';
 
-await wsClient.connect().catch(console.error);
-
-wsClient.sub('chat', (message) => console.log(message))
-  .then(console.log)
-  .catch(console.error);
-
-wsClient.pub('chat', 'Hello World')
-  .then(console.log)
-  .catch(console.error);
-
-wsClient.pub('chat', 'badword')
-  .then(console.log)
-  .catch(console.error);
-
-wsClient.pub('cht', 'Hello')
-  .then(console.log)
-  .catch(console.error);
-
-wsClient.rpc('hello', {name: 'Anonymous'})
-  .then(console.log)
-  .catch(console.error);
+const myApp = createApp(App)
+myApp.use(Quasar, {
+  plugins: {},
+  config: {
+    brand: { negative: 'tomato' },
+    dark: 'auto',
+  },
+});
+myApp.mount('#app');

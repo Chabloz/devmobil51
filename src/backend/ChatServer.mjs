@@ -1,21 +1,26 @@
 import WSServerPubSub from '../websocket/WSServerPubSub.mjs';
-import WSServerError from '../websocket/WSServerError.mjs';
+import { getRandomInt } from '../utils/math.js';
 
-const server = new WSServerPubSub({
+function authCallback(token, request, wsServer) {
+  const id = getRandomInt(1, 9999);
+  const clients = wsServer.geClientsData();
+  while (clients.some(client => client.id === id)) {
+    id = getRandomInt(1, 9999);
+  }
+  return {id, username: 'Anonymous-' + id};
+}
+
+function hookPub(msg, client, wsServer) {
+  if (typeof msg !== 'string' || msg.length < 1) return false;
+  const timestamp = new Date().getTime();
+  return {msg, timestamp, username: client.username};
+}
+
+const wsServer = new WSServerPubSub({
   port: 8887,
   origins: 'http://localhost:5173',
+  authCallback,
 });
 
-server.addChannel('chat', {
-  hookPub: (msg, client, wsServer) => {
-    if (msg === 'badword') throw new WSServerError('Bad word');
-    return {msg, time: Date.now(), user: client.id};
-  },
-});
-
-server.addRpc('hello', (data, client, wsServer) => {
-  if (!data?.name) throw new WSServerError('Name is required');
-  return `Hello from WS server ${data.name}`;
-});
-
-server.start();
+wsServer.addChannel('chat', { hookPub });
+wsServer.start();
