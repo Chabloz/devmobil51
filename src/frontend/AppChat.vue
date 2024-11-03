@@ -1,9 +1,9 @@
 <script setup>
-  import { onUnmounted, ref, nextTick } from 'vue';
+  import { onUnmounted, watch, ref, nextTick } from 'vue';
   import TheChatToolbar from './components/TheChatToolbar.vue';
   import TheChatForm from './components/TheChatForm.vue';
   import BaseChatMsg from './components/BaseChatMsg.vue';
-  import wsClient from './store/chat';
+  import { wsClient, isConnecting, hasConnectionFailed } from './store/chat';
 
   const allMsg = ref([]);
 
@@ -12,7 +12,11 @@
     nextTick(() => window.scrollTo(0, document.body.scrollHeight));
   }
 
-  wsClient.sub('chat', pushToChat);
+  watch(isConnecting, (isConnected) => {
+    if (!isConnected) return;
+    wsClient.sub('chat', pushToChat);
+  });
+
   onUnmounted(() => wsClient.unsub('chat', pushToChat));
 </script>
 
@@ -24,12 +28,19 @@
     </q-header>
 
     <q-page-container>
-      <q-list padding class="column">
+      <q-item-label v-if="hasConnectionFailed" class="q-ma-md">
+        <q-icon name="error" color="negative" />
+        Connection failed
+      </q-item-label>
+
+      <q-spinner-facebook v-if="isConnecting"  class="q-ma-md"/>
+
+      <q-list padding class="column" v-if="!isConnecting && !hasConnectionFailed">
         <BaseChatMsg v-for="msg in allMsg" :key="msg.id" :msg="msg" />
       </q-list>
     </q-page-container>
 
-    <q-footer class="no-padding no-margin">
+    <q-footer class="no-padding no-margin" v-if="!isConnecting && !hasConnectionFailed">
       <TheChatForm />
     </q-footer>
 

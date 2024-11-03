@@ -3,6 +3,7 @@ import { ref } from 'vue';
 const defaultHeaders = {
   'Content-Type': 'application/json',
   'X-Requested-With': 'XMLHttpRequest',
+  'Accept': 'application/json',
 };
 
 let baseUrl = '';

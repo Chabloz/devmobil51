@@ -1,7 +1,20 @@
+import { ref } from "vue";
 import WSClient from "../../websocket/WSClient.js";
 
-const wsClient = new WSClient('ws://localhost:8887');
-wsClient.on('ws:error', console.error);
-await wsClient.connect().catch(console.error);
+export const wsClient = new WSClient('ws://localhost:8887');
+export const isConnecting = ref(true);
+export const hasConnectionFailed = ref(false);
+wsClient.on('close', () => {
+  hasConnectionFailed.value = true;
+  isConnecting.value = false;
+});
 
-export default wsClient;
+wsClient
+  .connect()
+  .then(() => {
+    isConnecting.value = false;
+  })
+  .catch(() => {
+    hasConnectionFailed.value = true;
+    isConnecting.value = false;
+  });

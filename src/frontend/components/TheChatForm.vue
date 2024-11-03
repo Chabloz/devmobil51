@@ -1,6 +1,6 @@
 <script setup>
   import { ref } from 'vue';
-  import wsClient from '../store/chat';
+  import { wsClient } from '../store/chat';
 
   const msg = defineModel('msg');
   const inputMsg = ref(null);
