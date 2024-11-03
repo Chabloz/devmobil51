@@ -2,7 +2,7 @@ import WSServerPubSub from '../websocket/WSServerPubSub.mjs';
 import { getRandomInt } from '../utils/math.js';
 
 function authCallback(token, request, wsServer) {
-  const id = getRandomInt(1, 9999);
+  let id = getRandomInt(1, 9999);
   const clients = wsServer.geClientsData();
   while (clients.some(client => client.id === id)) {
     id = getRandomInt(1, 9999);
