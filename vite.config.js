@@ -11,6 +11,15 @@ export default defineConfig(({ command, mode }) => {
       vue({template: { transformAssetUrls }}),
       quasar(),
     ],
+    server: {
+      proxy : {
+        '/api/chat/': {
+          target: 'https://chabloz.eu/api/chat/',
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/api\/chat/, '')
+        }
+      },
+    },
     resolve: {
       alias: {
         '/utils': path.resolve(__dirname, 'src/utils'),

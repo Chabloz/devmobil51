@@ -3,6 +3,17 @@
   import TheChatForm from './components/TheChatForm.vue';
   import TheChatMessages from './components/TheChatMessages.vue';
   import { isConnecting, hasConnectionFailed } from './store/chat';
+
+  // import { useFetchApi } from './composables/useFetchApi';
+  
+  
+  // const { fetchApiToRef } = useFetchApi(import.meta.env.VITE_API_URL);
+  // const {data: users, error, loading} = fetchApiToRef({
+  //   url: 'user/1',
+  //   method: 'DELETE',
+  //   data: {id: 1}
+  // });
+  
 </script>
 
 <template>
@@ -24,7 +35,7 @@
     </q-page-container>
 
     <q-footer class="no-padding no-margin" v-if="!isConnecting && !hasConnectionFailed">
-      <TheChatForm />
+      <TheChatForm />     
     </q-footer>
 
   </q-layout>
