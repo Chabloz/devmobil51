@@ -49,6 +49,7 @@ export function useFetchApi(baseUrl = null, additionalHeaders = {}) {
     data = null,
     method = null,
     headers = {},
+    timeout = 5000,
   }) {
     if (url == null || typeof url !== 'string') throw new Error('The URL must be a string.');
 
@@ -58,20 +59,27 @@ export function useFetchApi(baseUrl = null, additionalHeaders = {}) {
     method = method != null ? method.toUpperCase() : data != null ? 'POST' : 'GET';
 
     return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject({ status: 0, statusText: 'Timeout', data: null });
+      }, timeout);
+      
       fetch(fullUrl, {
         method,
         headers: allHeaders,
         body: data != null ? JSON.stringify(data) : null,
       })
-        .then(res => {
-          if (!res.ok) {
-            reject(res.statusText);
-            return;
-          }
-          return res.json();
-        })
-        .then(json => resolve(json))
-        .catch(err => reject(err));
+      .then(res => res.json().catch(() => null).then(data => {
+        clearTimeout(timer);
+        if (!res.ok) {
+          reject({ status: res.status, statusText: res.statusText, data });
+        } else {
+          resolve(data);
+        }
+      }))
+      .catch(err => {
+        clearTimeout(timer);
+        reject({ status: 0, statusText: err.message || 'Network error', data: null });
+      });
     });
   }
 
