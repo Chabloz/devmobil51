@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "chat:server": "node src/backend/ChatServer.mjs"
+    "chat:server": "node src/backend/ChatServer.mjs",
+    "circle:server": "node src/backend/CircleServer.mjs"
   },
   "devDependencies": {
     "@quasar/vite-plugin": "^1.8.0",
