@@ -171,6 +171,7 @@ export default class WSClient {
    *
    * @param {string} chan - The channel name.
    * @param {object} msg - The message to publish
+   * @param {number} [timeout=5000] - The timeout in milliseconds.
    * @returns {Promise} - A promise that resolves with the response or rejects if an error occurs.
    * @example
    * wsClient.pub('chat', {message: 'Hello, World!'});
@@ -205,7 +206,8 @@ export default class WSClient {
    *
    * @param {string} chan - The channel name.
    * @param {function} callback - The callback to call when a message is received.
-   * @returns {function} - A function to call to unsubscribe.
+   * @param {number} [timeout=5000] - The timeout in milliseconds.
+   * @returns {Promise} - A promise that resolves when the subscription is established or rejects if an error occurs.
    * @example
    * const unsub = wsClient.sub('chat', (msg) => console.log(msg));
    */
@@ -244,6 +246,8 @@ export default class WSClient {
    *
    * @param {string} chan - The channel name.
    * @param {function} [callback=null] - The callback to remove or null to remove all callbacks.
+   * @param {number} [timeout=5000] - The timeout in milliseconds.
+   * @returns {Promise} - A promise that resolves when the unsubscription is established or rejects if an error occurs.
    * @example
    * wsClient.unsub('chat');
    */
