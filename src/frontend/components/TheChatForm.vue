@@ -23,7 +23,7 @@
       v-model.trim="msg"
       label="Message"
       bg-color="secondary"
-      color="primary"
+      color="white"
       class="col"
     />
   </q-form>

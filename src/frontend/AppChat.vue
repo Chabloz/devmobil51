@@ -4,16 +4,24 @@
   import TheChatMessages from './components/TheChatMessages.vue';
   import { isConnecting, hasConnectionFailed } from './store/chat';
 
-  // import { useFetchApi } from './composables/useFetchApi';
-  
-  
-  // const { fetchApiToRef } = useFetchApi(import.meta.env.VITE_API_URL);
-  // const {data: users, error, loading} = fetchApiToRef({
-  //   url: 'user/1',
-  //   method: 'DELETE',
-  //   data: {id: 1}
+  // import {  useFetchApiCrud } from './composables/useFetchApiCrud';
+
+  // const peopleCrud = useFetchApiCrud('people', import.meta.env.VITE_API_URL);
+  // const {data, error, loading} = peopleCrud.read('67441f0521b773a54417345b');
+  // const {data, error, loading} = peopleCrud.create({
+  //   "name": "John Doe",
+  //   "gender": "male",
+  //   "birthDate": "2001-02-03T08:30:00.000Z"
   // });
-  
+
+  // const movieCrud = useFetchApiCrud('movies', import.meta.env.VITE_API_URL);
+  // const {data: movies} = movieCrud.readAll();
+  // movieCrud.create({
+  //   "title": "The Shawshank Redemption",
+  //   "rating": 8.5,
+  //   "directorId": "d038e6fedc4cf8b5ace5a689"
+  // });
+
 </script>
 
 <template>
@@ -35,7 +43,10 @@
     </q-page-container>
 
     <q-footer class="no-padding no-margin" v-if="!isConnecting && !hasConnectionFailed">
-      <TheChatForm />     
+      <TheChatForm />
+      People: {{ data }}
+      Error: {{ error }}
+      {{  movies }}
     </q-footer>
 
   </q-layout>

@@ -13,10 +13,9 @@ export default defineConfig(({ command, mode }) => {
     ],
     server: {
       proxy : {
-        '/api/chat/': {
-          target: 'https://chabloz.eu/api/chat/',
+        '/api/': {
+          target: 'https://demo.archioweb.ch/',
           changeOrigin: true,
-          rewrite: path => path.replace(/^\/api\/chat/, '')
         }
       },
     },
