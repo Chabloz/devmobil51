@@ -44,9 +44,6 @@
 
     <q-footer class="no-padding no-margin" v-if="!isConnecting && !hasConnectionFailed">
       <TheChatForm />
-      People: {{ data }}
-      Error: {{ error }}
-      {{  movies }}
     </q-footer>
 
   </q-layout>
