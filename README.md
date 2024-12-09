@@ -1,6 +1,6 @@
 # Devmobil 51
 
-# Fonctionnalités d'évaluation
+# Evaluation
 
 - Un utilisateur doit pouvoir s'inscrire et/ou se connecter (selon les capacités de l'API).  
 - Un utilisateur doit pouvoir effectuer les opérations CRUD sur les ressources principales du modèle de domaine de l'API.  
@@ -20,7 +20,12 @@
 
 ---
 
-# Présentation
+# Livrables
+
+Chaque groupe devra envoyer un e-mail avant une date définie (probablement fin janvier) comprenant :  
+- La liste des membres du groupe.  
+- Le lien vers le dépôt GitHub contenant le code source et le README pour l'installation.
+- Le lien vers la présentation (si elle n'est pas incluse dans le dépôt). 
 
 Vous devez fournir une présentation de votre application. Cela peut être :  
 - Une documentation utilisateur ou un argumentaire commercial, sous la forme de :  
@@ -30,10 +35,7 @@ Vous devez fournir une présentation de votre application. Cela peut être :
   - Toute autre méthode de présentation (discutée au préalable).  
 - Cette présentation doit être accessible en ligne.  
 
-Chaque groupe devra envoyer un e-mail avant une date définie (probablement fin janvier) comprenant :  
-- La liste des membres du groupe.  
-- Le lien vers le dépôt GitHub contenant le code source.  
-- Le lien vers la présentation (si elle n'est pas incluse dans le dépôt).  
+
 
 ---
 
