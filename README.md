@@ -2,16 +2,15 @@
 
 # Evaluation
 
-# Fonctionnalités de l'application
+## Fonctionnalités de l'application
 
 - Un utilisateur doit pouvoir s'inscrire et/ou se connecter (selon les capacités de l'API).  
 - Un utilisateur doit pouvoir effectuer les opérations CRUD sur les ressources principales du modèle de domaine de l'API.  
 - L'application doit utiliser des fonctionnalités basées sur WebSocket (par exemple, synchronisation des données en temps réel, notifications ou mise à jour automatique des listes).  
 - Une liste de ressources avec filtres et paramètres de recherche doit être proposée.  
 
----
 
-# Implémentation
+## Implémentation
 
 - L'application doit respecter les meilleures pratiques de Vue.js.  
 - L'interface utilisateur (UI) et l'expérience utilisateur (UX) doivent être bien pensées et optimisées pour une utilisation mobile (par exemple, navigation intuitive, design responsive et interactions fluides).  
@@ -20,9 +19,7 @@
   - Lors de la soumission d'un formulaire (saisie invalide ou échec d'appel à l'API).  
   - Lors de l'utilisation de fonctionnalités WebSocket (en cas de déconnexion ou problème de synchronisation).  
 
----
-
-# Livrables
+## Livrables
 
 Chaque groupe devra envoyer un e-mail avant une date définie (probablement fin janvier) comprenant :  
 - La liste des membres du groupe.  
@@ -37,10 +34,7 @@ Vous devez fournir une présentation de votre application. Cela peut être :
   - Toute autre méthode de présentation (discutée au préalable).  
 - Cette présentation doit être accessible en ligne.  
 
-
-
 ---
-
 
 Si vous voulez aussi installer Vue dans votre projet, voici les étapes à suivre:
 
