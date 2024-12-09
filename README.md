@@ -2,6 +2,8 @@
 
 # Evaluation
 
+# Fonctionnalités de l'application
+
 - Un utilisateur doit pouvoir s'inscrire et/ou se connecter (selon les capacités de l'API).  
 - Un utilisateur doit pouvoir effectuer les opérations CRUD sur les ressources principales du modèle de domaine de l'API.  
 - L'application doit utiliser des fonctionnalités basées sur WebSocket (par exemple, synchronisation des données en temps réel, notifications ou mise à jour automatique des listes).  
