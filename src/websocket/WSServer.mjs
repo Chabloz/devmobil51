@@ -1,7 +1,7 @@
 import WebSocketServerOrigin from "./WebSocketServerOrigin.mjs";
 import WebSocket from 'ws';
 import crypto from 'crypto';
-import { bytesBase64Decode } from "./string.js";
+import { bytesBase64Decode } from "./String.mjs";
 
 export default class WSServer {
 
@@ -23,13 +23,15 @@ export default class WSServer {
   constructor({
     port = 8887,
     maxNbOfClients = 1000,
+    maxInputSize = 1000000,
     verbose = true,
     origins = 'http://localhost:5173',
     pingTimeout = 30000,
-    authCallback = (headers, wsServer) => {},
+    authCallback = (headers, wsServer) => ({}),
   } = {}) {
     this.port = port;
     this.maxNbOfClients = maxNbOfClients;
+    this.maxInputSize = maxInputSize;
     this.verbose = verbose;
     this.origins = origins;
     this.pingTimeout = pingTimeout;
@@ -98,7 +100,13 @@ export default class WSServer {
       }
     }
 
-    const customMetadata = this.authCallback(token, request, this);
+    try {
+      var customMetadata = this.authCallback(token, request, this);
+    } catch (e) {
+      this.log(e.name + ': ' + e.message);
+      return false;
+    }
+
     if (customMetadata === false) {
       this.sendAuthFailed(client);
       client.close();
@@ -132,6 +140,11 @@ export default class WSServer {
   // to override
   onMessage(client, message) {
     message = message.toString();
+    if (message.length > this.maxInputSize) {
+      this.log(`Client ${this.clients.get(client).id} sent a message that is too large`);
+      client.close();
+      return;
+    }
     this.broadcast(message);
   }
 

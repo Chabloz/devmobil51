@@ -4,10 +4,10 @@
   import TheChatMessages from './components/TheChatMessages.vue';
   import { isConnecting, hasConnectionFailed } from './store/chat';
 
-  // import {  useFetchApiCrud } from './composables/useFetchApiCrud';
+  import {  useFetchApiCrud } from './composables/useFetchApiCrud';
 
-  // const peopleCrud = useFetchApiCrud('people', import.meta.env.VITE_API_URL);
-  // const {data, error, loading} = peopleCrud.read('67441f0521b773a54417345b');
+  const peopleCrud = useFetchApiCrud('people', import.meta.env.VITE_API_URL);
+  const {data, error, loading} = peopleCrud.readAll();
   // const {data, error, loading} = peopleCrud.create({
   //   "name": "John Doe",
   //   "gender": "male",
@@ -32,6 +32,7 @@
     </q-header>
 
     <q-page-container>
+    {{ data }}
       <q-item-label v-if="hasConnectionFailed" class="q-ma-md">
         <q-icon name="error" color="negative" />
         Connection failed
