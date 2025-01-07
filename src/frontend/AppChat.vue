@@ -6,8 +6,8 @@
 
   import {  useFetchApiCrud } from './composables/useFetchApiCrud';
 
-  const peopleCrud = useFetchApiCrud('people', import.meta.env.VITE_API_URL);
-  const {data, error, loading} = peopleCrud.readAll();
+  // const peopleCrud = useFetchApiCrud('people', import.meta.env.VITE_API_URL);
+  // const {data, error, loading} = peopleCrud.readAll();
   // const {data, error, loading} = peopleCrud.create({
   //   "name": "John Doe",
   //   "gender": "male",
@@ -32,7 +32,6 @@
     </q-header>
 
     <q-page-container>
-    {{ data }}
       <q-item-label v-if="hasConnectionFailed" class="q-ma-md">
         <q-icon name="error" color="negative" />
         Connection failed
