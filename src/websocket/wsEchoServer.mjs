@@ -1,5 +1,5 @@
-import WSServerRoomManager from '../lib/synnecs/websocket/WSServerRoomManager.mjs';
-import WSServerError from '../lib/synnecs/websocket/WSServerError.mjs';
+import WSServerRoomManager from './WSServerRoomManager.mjs';
+import WSServerError from './WSServerError.mjs';
 
 function hookCreateRoom(name, msg, clientMeta, client, wsServer) {
   if (name === 'bad-words') throw new WSServerError('Bad words are not allowed');

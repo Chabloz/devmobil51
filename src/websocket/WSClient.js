@@ -1,5 +1,5 @@
-import EventMixins from '../mixins/event.js';
-import { bytesBase64Encode } from '../utils/String.js';
+import EventMixins from './Event.js';
+import { bytesBase64Encode } from './String.js';
 
 // TODO: auto reconnection
 // TODO: queue if not connected
