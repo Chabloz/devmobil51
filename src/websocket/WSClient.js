@@ -1,12 +1,17 @@
-import EventMixins from './Event.js';
-import { bytesBase64Encode } from './string.js';
+import EventMixins from './event.js';
+import { bytesBase64Encode } from './String.mjs';
 
 export default class WSClient {
+  rpcId = 0;
+  pubId = 0;
+  subId = 0;
+  unsubId = 0;
+
 /**
  *  A WebSocket PubSub client to interact with the WS PubSub server.
  *
  * @param {string} [url=null] - The WebSocket server URL.
- * If null, the URL will be determined based on the current page URL.
+ * If null, the URL will be determined based on the current domain and scheme.
  * @example
  * const wsClient = new WSClient('ws://localhost:8001');
  */
@@ -21,10 +26,6 @@ export default class WSClient {
     }
     this.wsClient = null;
     this.defaultTimeout = defaultTimeout;
-    this.rpcId = 0;
-    this.pubId = 0;
-    this.subId = 0;
-    this.unsubId = 0;
 
     Object.assign(this, EventMixins);
     this.mixinEvent();
@@ -201,6 +202,11 @@ export default class WSClient {
     });
   }
 
+  pubSimple(chan, msg) {
+    const id = this.pubId++;
+    this.wsClient.send(JSON.stringify({action: 'pub-simple', chan, id, msg}));
+  }
+
   /**
    * Subscribe to a channel.
    *
@@ -212,8 +218,8 @@ export default class WSClient {
    * const unsub = wsClient.sub('chat', (msg) => console.log(msg));
    */
   sub(chan, callback, timeout = this.defaultTimeout) {
-    this.on(`ws:chan:${chan}`, callback);
-    if (!this.hasListener(chan)) {
+    if (!this.hasListener(`ws:chan:${chan}`)) {
+      this.on(`ws:chan:${chan}`, callback);
       return new Promise((resolve, reject) => {
         const id = this.subId++;
 
@@ -238,6 +244,7 @@ export default class WSClient {
         this.wsClient.send(JSON.stringify({action: 'sub', chan, id}));
       });
     }
+    this.on(`ws:chan:${chan}`, callback);
     return Promise.resolve('Subscribed');
   }
 
@@ -272,7 +279,7 @@ export default class WSClient {
           clearTimeout(timer);
           this.off(`ws:unsub:${chan}`, unsubCallback);
           if (resp.type === 'success') {
-            resolve(resp.response)
+            resolve(resp.response);
           } else {
             reject(new Error(resp.response));
           }

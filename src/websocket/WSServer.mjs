@@ -1,7 +1,7 @@
 import WebSocketServerOrigin from "./WebSocketServerOrigin.mjs";
 import WebSocket from 'ws';
 import crypto from 'crypto';
-import { bytesBase64Decode } from "./string.js";
+import { bytesBase64Decode } from "./String.mjs";
 
 export default class WSServer {
 
@@ -11,6 +11,7 @@ export default class WSServer {
    * @param {Object} options - Configuration options.
    * @param {number} [options.port=8887] - The port number to run the server on.
    * @param {number} [options.maxNbOfClients=1000] - Maximum number of allowed clients.
+   * @param {number} [options.maxInputSize=100000] - Maximum size of input messages in bytes. (default: 100KB)
    * @param {boolean} [options.verbose=true] - Enable or disable verbose logging.
    * @param {string} [options.origins='http://localhost:5173'] - Allowed origins.
    * @param {number} [options.pingTimeout=30000] - The timeout in milliseconds for ping responses.
@@ -23,13 +24,15 @@ export default class WSServer {
   constructor({
     port = 8887,
     maxNbOfClients = 1000,
+    maxInputSize = 100000,
     verbose = true,
     origins = 'http://localhost:5173',
     pingTimeout = 30000,
-    authCallback = (headers, wsServer) => {},
+    authCallback = (token, request, wsServer) => ({}),
   } = {}) {
     this.port = port;
     this.maxNbOfClients = maxNbOfClients;
+    this.maxInputSize = maxInputSize;
     this.verbose = verbose;
     this.origins = origins;
     this.pingTimeout = pingTimeout;
@@ -67,10 +70,9 @@ export default class WSServer {
 
   close() {
     if (this.server === null) return;
+    for (const client of this.clients.keys()) client.close();
     clearInterval(this.pingInterval);
-    this.log(`WebSocket Server closed on port ${this.port}`);
-    this.clients.clear();
-    this.server.close();
+    this.server.close(() => this.log("Server closed"));
     this.server = null;
   }
 
@@ -83,7 +85,8 @@ export default class WSServer {
   }
 
   log(message) {
-    this.server.log(message);
+    if (!this.verbose) return;
+    console.log(`[WSS] ${message}`);
   }
 
   onConnection(client, request) {
@@ -98,11 +101,21 @@ export default class WSServer {
       }
     }
 
-    const customMetadata = this.authCallback(token, request, this);
+    try {
+      var customMetadata = this.authCallback(token, request, this);
+    } catch (e) {
+      this.log(e.name + ': ' + e.message);
+      return false;
+    }
+
     if (customMetadata === false) {
       this.sendAuthFailed(client);
       client.close();
       return;
+    }
+
+    if (customMetadata === null || typeof customMetadata !== 'object') {
+      customMetadata = {};
     }
 
     this.createClientMetadata(client, customMetadata);
@@ -129,10 +142,21 @@ export default class WSServer {
     client.close();
   }
 
-  // to override
   onMessage(client, message) {
     message = message.toString();
+    if (message.length > this.maxInputSize) {
+      this.log(`Client ${this.clients.get(client).id} sent a message that is too large`);
+      client.close();
+      return;
+    }
     this.broadcast(message);
+  }
+
+  getClientSocket(id) {
+    for (const [client, metadata] of this.clients.entries()) {
+      if (metadata.id === id) return client;
+    }
+    return null;
   }
 
   broadcast(message) {

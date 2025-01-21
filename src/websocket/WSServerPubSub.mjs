@@ -4,6 +4,8 @@ import WSServerError from "./WSServerError.mjs";
 export default class WSServerPubSub extends WSServer {
   channels = new Map();
   rpcs = new Map();
+  actionsRpc = ['rpc'];
+  actionsPubSub = ['sub', 'pub', 'pub-simple', 'unsub'];
 
   /**
    * Add a channel to the server
@@ -52,15 +54,26 @@ export default class WSServerPubSub extends WSServer {
   }
 
   /**
+   * Check if a channel exists
+   * @param {string} chanName - The channel name
+   * @returns {boolean} - True if the channel exists, false otherwise
+   * @example
+   * wsServer.hasChannel('chat'); // true or false
+   */
+  hasChannel(chanName) {
+    return this.channels.has(chanName);
+  }
+
+  /**
    * Add a RPC to the server
    *
    * @param {string} name - The RPC name
    * @param {function} callback - The RPC callback. It must return the response to the client.
-   * The callback is called with the data sent by the client, the client metadata and the server instance.
+   * The callback is called with the data sent by the client, the client metadata, the ws client and the server instance.
    * The callback can throw a WSServerError to send an error to the client
    *
    * @example
-   * wsServer.addRpc('hello', (data, client, wsServer) => {
+   * wsServer.addRpc('hello', (data, clientMetadata, client, wsServer) => {
    *   if (!data?.name) throw new WSServerError('Name is required');
    *   return `Hello from WS server ${data.name}`;
    * });
@@ -88,24 +101,35 @@ export default class WSServerPubSub extends WSServer {
     return true;
   }
 
+  isActionValid(action) {
+    return this.actionsPubSub.includes(action) || this.actionsRpc.includes(action);
+  }
+
   onMessage(client, message) {
     message = message.toString();
-    let data;
-    try{
-      data = JSON.parse(message)
-    } catch(e) {
+    if (message.length > this.maxInputSize) {
+      this.log(`Client ${this.clients.get(client).id} sent a message that is too large`);
+      client.close();
+      return false;
+    }
+
+    try {
+      var data = JSON.parse(message);
+    } catch (e) {
       return this.sendError(client, 'Invalid data');
     }
 
-    if (data.action != 'sub' && data.action != 'pub' && data.action != 'unsub' && data.action != 'rpc') {
+    if (!this.isActionValid(data.action)) {
       return this.sendError(client, 'Invalid action');
     }
 
-    if (data.action === 'rpc') {
+    if (this.actionsRpc.includes(data.action)) {
       return this.manageRpc(client, data);
-    } else {
+    }
+    if (this.actionsPubSub.includes(data.action)) {
       return this.managePubSub(client, data);
     }
+    return data;
   }
 
   managePubSub(client, data) {
@@ -162,16 +186,29 @@ export default class WSServerPubSub extends WSServer {
         return this.sendPubError(client, data.id, data.chan, 'Users cannot pub on this chan');
       }
 
-      let dataToSend;
       try {
-        dataToSend = chan.hookPub(data.msg, this.clients.get(client), this);
+        var dataToSend = chan.hookPub(data.msg, this.clients.get(client), this);
       } catch (e) {
-        if (!(e instanceof WSServerError)) this.log(e.name +': ' + e.message);
+        if (!(e instanceof WSServerError)) this.log(e.name + ': ' + e.message);
         const response = e instanceof WSServerError ? e.message : 'Server error';
         return this.sendPubError(client, data.id, data.chan, response);
       }
 
       this.sendPubSuccess(client, data.id, data.chan, 'Message sent');
+      return this.pub(data.chan, dataToSend);
+    }
+
+    if (data.action === 'pub-simple') {
+      if (!this.channels.has(data.chan)) return false;
+      const chan = this.channels.get(data.chan);
+      if (!chan.usersCanPub) return false;
+      let dataToSend;
+      try {
+        dataToSend = chan.hookPub(data.msg, this.clients.get(client), this);
+      } catch (e) {
+        if (!(e instanceof WSServerError)) this.log(e.name + ': ' + e.message);
+        return false;
+      }
       return this.pub(data.chan, dataToSend);
     }
   }
@@ -195,7 +232,7 @@ export default class WSServerPubSub extends WSServer {
 
     let response;
     try {
-      response = rpc(data.data, this.clients.get(client), this);
+      response = rpc(data.data, this.clients.get(client), client, this);
     } catch (e) {
       if (!(e instanceof WSServerError)) this.log(e.name +': ' + e.message);
       const response = e instanceof WSServerError ? e.message : 'Server error';
@@ -209,12 +246,7 @@ export default class WSServerPubSub extends WSServer {
     const chan = this.channels.get(chanName);
     if (!chan) return false;
 
-    const message = JSON.stringify({
-      action: 'pub',
-      chan: chanName,
-      msg,
-    });
-
+    const message = JSON.stringify({action: 'pub', chan: chanName, msg});
     for (const client of chan.clients) {
       this.send(client, message);
     }
@@ -232,8 +264,14 @@ export default class WSServerPubSub extends WSServer {
     super.onClose(client);
   }
 
+  close() {
+    this.channels.clear();
+    this.rpcs.clear();
+    super.close();
+  }
+
   sendError(client, msg) {
-    this.send(client, JSON.stringify({action: 'error', msg}));
+    this.sendJson(client, {action: 'error', msg});
     return false;
   }
 
@@ -248,13 +286,7 @@ export default class WSServerPubSub extends WSServer {
   }
 
   sendRpc(client, id, name, response, type = 'success') {
-    this.send(client, JSON.stringify({
-      action: 'rpc',
-      id,
-      name,
-      type,
-      response,
-    }));
+    this.sendJson(client, {action: 'rpc', id, name, type, response});
   }
 
   sendSubError(client, id, chan, response) {
@@ -268,13 +300,7 @@ export default class WSServerPubSub extends WSServer {
   }
 
   sendSubConfirm(client, id, chan, response, type = 'success') {
-    this.send(client, JSON.stringify({
-      action: 'sub',
-      id,
-      chan,
-      type,
-      response,
-    }));
+    this.sendJson(client, {action: 'sub', id, chan, type, response});
   }
 
   sendUnsubError(client, id, chan, response) {
@@ -288,13 +314,7 @@ export default class WSServerPubSub extends WSServer {
   }
 
   sendUnsubConfirm(client, id, chan, response, type = 'success') {
-    this.send(client, JSON.stringify({
-      action: 'unsub',
-      id,
-      chan,
-      type,
-      response,
-    }));
+    this.sendJson(client, {action: 'unsub', id, chan, type, response});
   }
 
   sendPubError(client, id, chan, response) {
@@ -308,21 +328,19 @@ export default class WSServerPubSub extends WSServer {
   }
 
   sendPubConfirm(client, id, chan, response, type = 'success') {
-    this.send(client, JSON.stringify({
-      action: 'pub-confirm',
-      id,
-      chan,
-      type,
-      response,
-    }));
+    this.sendJson(client, {action: 'pub-confirm', id, chan, type, response});
   }
 
   sendAuthFailed(client) {
-    this.send(client, JSON.stringify({action: 'auth-failed'}));
+    this.sendJson(client, {action: 'auth-failed'});
   }
 
   sendAuthSuccess(client) {
-    this.send(client, JSON.stringify({action: 'auth-success'}));
+    this.sendJson(client, {action: 'auth-success'});
+  }
+
+  sendJson(client, data) {
+    this.send(client, JSON.stringify(data));
   }
 
 }
